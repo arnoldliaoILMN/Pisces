@@ -10,12 +10,14 @@ RUN apt-get install git bzip2 wget -y
 RUN apt-get install python2.7 python2.7-dev python \
                     python-setuptools \
                     python-pip \
+                    vi \
                     python-psutil \
                     cython \
                     python-numpy \
                     python-pandas \
                     python-distribute \
                     python-pysam \
+					default-jdk \
                     python-scipy \
                     -y
 RUN apt-get install software-properties-common python-software-properties -y
@@ -26,21 +28,18 @@ RUN apt-get clean -y
 RUN pip install bx-python==0.7.3 
 #tjd-
 
-RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
-    add-apt-repository -y ppa:webupd8team/java && \
-    apt-get update && \
-    apt-get install -y oracle-java8-installer && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -rf /var/cache/oracle-jdk8-installer
 
 # copy git repository into the image
+# using git instead
 RUN mkdir -p /opt/hap.py-source
-COPY . /opt/hap.py-source/
+WORKDIR /opt/hap.py-source
+RUN git clone https://github.com/Illumina/hap.py.git
 
 # make minimal HG19 reference sequence
 RUN mkdir -p /opt/hap.py-data
 
 # get + install ant
+# hap.py need ant to build
 WORKDIR /opt
 RUN wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.7-bin.tar.gz && \
     tar xzf apache-ant-1.9.7-bin.tar.gz && \
@@ -48,7 +47,7 @@ RUN wget http://archive.apache.org/dist/ant/binaries/apache-ant-1.9.7-bin.tar.gz
 ENV PATH $PATH:/opt/apache-ant-1.9.7/bin
 
 # run hap.py installer in the image, don't run tests 
-WORKDIR /opt/hap.py-source
+WORKDIR /opt/hap.py-source/hap.py
 RUN python install.py /opt/hap.py --with-rtgtools --no-tests
 
 ## download HG19 reference data
@@ -84,5 +83,3 @@ RUN tar -xzf Pisces/binaries/5.2.5.20/Pisces_5.2.5.20.tar.gz
 
 WORKDIR /app
 COPY run_analysis.sh /app
-
-
